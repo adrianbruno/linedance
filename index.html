@@ -291,6 +291,7 @@
       </div>
     </div>
     <button class="btn-primary" id="btn-agregar" onclick="agregarCoreo()">Agregar coreografía</button>
+    <button id="btn-cancelar" onclick="cancelarEdicion()" style="display:none;width:100%;margin-top:8px;padding:10px;font-size:14px;background:transparent;border:0.5px solid var(--border2);border-radius:var(--radius-md);color:var(--text2);cursor:pointer;font-family:inherit;">Cancelar edición</button>
   </div>
 
   <div class="card">
@@ -352,6 +353,7 @@
   let datos = [];
   let filtroEstado = "todos";
   let busqueda = "";
+  let editandoIdx = -1; // -1 = modo agregar, >= 0 = modo editar
 
   // Ocultar aviso si ya está configurado
   if (APPS_SCRIPT_URL !== "TU_URL_ACA") {
@@ -383,7 +385,37 @@
     }
   }
 
-  // ---- Agregar ----
+  // ---- Editar: cargar datos en el formulario ----
+  function editarCoreo(idx) {
+    const d = datos[idx];
+    editandoIdx = idx;
+    document.getElementById("inp-coreo").value   = d.coreo;
+    document.getElementById("inp-cancion").value = d.cancion !== d.coreo ? d.cancion : "";
+    document.getElementById("inp-artista").value = d.artista !== "-" ? d.artista : "";
+    document.getElementById("inp-nivel").value   = d.nivel !== "-" ? d.nivel : "";
+    document.getElementById("inp-url").value     = d.url;
+    resetPreview();
+
+    const btn = document.getElementById("btn-agregar");
+    btn.textContent = "Guardar cambios";
+    btn.style.background = "#185FA5";
+    document.getElementById("btn-cancelar").style.display = "block";
+
+    // Hacer scroll al formulario
+    document.querySelector(".card").scrollIntoView({ behavior: "smooth", block: "start" });
+    mostrarToast("Editando: " + d.coreo);
+  }
+
+  function cancelarEdicion() {
+    editandoIdx = -1;
+    limpiarForm();
+    const btn = document.getElementById("btn-agregar");
+    btn.textContent = "Agregar coreografía";
+    btn.style.background = "";
+    document.getElementById("btn-cancelar").style.display = "none";
+  }
+
+  // ---- Agregar / Guardar edición ----
   async function agregarCoreo() {
     const coreo   = document.getElementById("inp-coreo").value.trim().toUpperCase();
     const cancion = document.getElementById("inp-cancion").value.trim();
@@ -398,6 +430,34 @@
     btn.disabled = true;
     btn.textContent = "Guardando...";
 
+    if (editandoIdx >= 0) {
+      // --- MODO EDICIÓN ---
+      const idx = editandoIdx;
+      datos[idx].coreo   = coreo;
+      datos[idx].cancion = cancion || coreo;
+      datos[idx].artista = artista || "-";
+      datos[idx].nivel   = nivel || "-";
+      datos[idx].url     = url;
+      cancelarEdicion();
+      renderizar();
+      actualizarStats();
+      mostrarToast("Cambios guardados!");
+
+      if (APPS_SCRIPT_URL !== "TU_URL_ACA") {
+        try {
+          await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "update", idx, ...datos[idx] }),
+          });
+        } catch (e) { mostrarToast("Error al sincronizar con Sheets", true); }
+      }
+      btn.disabled = false;
+      btn.textContent = "Agregar coreografía";
+      btn.style.background = "";
+      return;
+    }
+
+    // --- MODO AGREGAR ---
     const nuevo = { coreo, cancion: cancion || coreo, artista: artista || "-", nivel: nivel || "-", url, estado: "pendiente" };
 
     if (APPS_SCRIPT_URL === "TU_URL_ACA") {
@@ -450,6 +510,7 @@
   // ---- Renderizar tabla ----
   function renderizar() {
     const tbody = document.getElementById("tabla-body");
+    const cards = document.getElementById("cards-container");
     let lista = datos;
     if (filtroEstado !== "todos") lista = lista.filter(d => d.estado === filtroEstado);
     if (busqueda) lista = lista.filter(d =>
@@ -457,29 +518,63 @@
       d.cancion.toLowerCase().includes(busqueda) ||
       d.artista.toLowerCase().includes(busqueda)
     );
+
     if (lista.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay coreografías para mostrar</td></tr>';
+      cards.innerHTML = '<p class="empty">No hay coreografías para mostrar</p>';
       return;
     }
+
+    // Tabla desktop
     tbody.innerHTML = lista.map(d => {
       const idxReal = datos.indexOf(d);
       const safeCoreo = d.coreo.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      const safeUrl = d.url.replace(/'/g, "\\'");
       return `
-      <tr>
+      <tr ondblclick="editarCoreo(${idxReal})" style="cursor:pointer" title="Doble click para editar">
         <td class="coreo-name">${d.coreo}</td>
         <td>
           <div>${d.cancion}</div>
           <div class="sub">${d.artista}</div>
         </td>
         <td><span style="font-size:12px;color:var(--text2)">${d.nivel}</span></td>
-        <td><button class="link-chip" onclick="abrirModal('${d.url}','${safeCoreo}')">▶ ver</button></td>
+        <td><button class="link-chip" onclick="abrirModal('${safeUrl}','${safeCoreo}')">&#9654; ver</button></td>
         <td>
           <button class="badge ${d.estado === 'descargada' ? 'badge-green' : 'badge-amber'}"
             onclick="toggleEstado(${idxReal})" title="Click para cambiar estado">
-            ${d.estado === 'descargada' ? '✓ descargada' : '⏳ pendiente'}
+            ${d.estado === 'descargada' ? '&#10003; descargada' : '&#8987; pendiente'}
           </button>
         </td>
       </tr>`;
+    }).join("");
+
+    // Tarjetas mobile
+    cards.innerHTML = lista.map(d => {
+      const idxReal = datos.indexOf(d);
+      const safeCoreo = d.coreo.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      const safeUrl = d.url.replace(/'/g, "\\'");
+      const esBadgeVerde = d.estado === 'descargada';
+      return `
+      <div class="coreo-card" ondblclick="editarCoreo(${idxReal})">
+        <div class="coreo-card-top">
+          <div class="coreo-card-nombre">${d.coreo}</div>
+          <button class="badge ${esBadgeVerde ? 'badge-green' : 'badge-amber'}"
+            onclick="toggleEstado(${idxReal})">
+            ${esBadgeVerde ? '&#10003;' : '&#8987;'}
+          </button>
+        </div>
+        <div class="coreo-card-meta">
+          ${d.cancion !== d.coreo ? d.cancion + ' &nbsp;&middot;&nbsp; ' : ''}${d.artista !== '-' ? d.artista : ''}
+          ${d.nivel !== '-' ? '<span class="coreo-card-nivel">' + d.nivel + '</span>' : ''}
+        </div>
+        <div class="coreo-card-actions">
+          <button class="link-chip" onclick="abrirModal('${safeUrl}','${safeCoreo}')">&#9654; ver video</button>
+          <button class="badge ${esBadgeVerde ? 'badge-green' : 'badge-amber'}"
+            onclick="toggleEstado(${idxReal})" style="flex:1;justify-content:center;">
+            ${esBadgeVerde ? '&#10003; descargada' : '&#8987; pendiente'}
+          </button>
+        </div>
+      </div>`;
     }).join("");
   }
 

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LineDance App — Carga de coreografías</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #f5f5f3;
+      --bg3: #eeede8;
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --text3: #9b9b96;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --accent: #B85A30;
+      --accent-hover: #9e4d28;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --green-bg: #EAF3DE; --green-text: #3B6D11;
+      --amber-bg: #FAEEDA; --amber-text: #854F0B;
+      --red-bg: #FCEBEB;   --red-text: #A32D2D;
+      --info-bg: #E6F1FB;  --info-text: #185FA5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1e1c; --bg2: #272725; --bg3: #2e2e2b;
+        --text: #f0ede8; --text2: #a8a8a2; --text3: #6e6e68;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+        --green-bg: #173404; --green-text: #C0DD97;
+        --amber-bg: #412402; --amber-text: #FAC775;
+        --red-bg: #501313;   --red-text: #F7C1C1;
+        --info-bg: #042C53;  --info-text: #B5D4F4;
+      }
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+
+    .header { background: var(--bg2); border-bottom: 0.5px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+    .logo { width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .logo-text h1 { font-size: 16px; font-weight: 500; }
+    .logo-text p { font-size: 12px; color: var(--text2); }
+
+    .container { max-width: 820px; margin: 0 auto; padding: 24px 16px 48px; }
+
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat { background: var(--bg2); border-radius: var(--radius-md); padding: 14px 16px; }
+    .stat-num { font-size: 28px; font-weight: 500; }
+    .stat-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    /* Cards */
+    .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 15px; font-weight: 500; margin-bottom: 16px; }
+
+    /* Form */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 12px; color: var(--text2); font-weight: 500; letter-spacing: 0.02em; }
+    input, select {
+      width: 100%; padding: 9px 12px; font-size: 14px;
+      border: 0.5px solid var(--border2); border-radius: var(--radius-md);
+      background: var(--bg); color: var(--text); outline: none;
+      transition: border-color 0.15s; font-family: inherit;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    #inp-coreo { text-transform: uppercase; }
+    .url-row { display: flex; gap: 8px; }
+    .url-row input { flex: 1; }
+    .btn-preview {
+      background: transparent; border: 0.5px solid var(--border2);
+      border-radius: var(--radius-md); padding: 9px 14px; font-size: 13px;
+      color: var(--text); cursor: pointer; white-space: nowrap;
+      transition: background 0.15s; font-family: inherit;
+    }
+    .btn-preview:hover { background: var(--bg2); }
+    .preview-box { margin-top: 12px; border-radius: var(--radius-md); overflow: hidden; border: 0.5px solid var(--border); display: none; }
+    .preview-box iframe { width: 100%; height: 220px; display: block; border: none; }
+    .preview-error { margin-top: 10px; padding: 10px 14px; background: var(--red-bg); border-radius: var(--radius-md); font-size: 13px; color: var(--red-text); display: none; }
+    .btn-primary {
+      background: var(--accent); color: white; border: none;
+      border-radius: var(--radius-md); padding: 10px 20px;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      width: 100%; margin-top: 8px; transition: background 0.15s;
+      font-family: inherit;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Table toolbar */
+    .table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+    .filter-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .filter-tab {
+      background: transparent; border: 0.5px solid var(--border);
+      border-radius: 99px; padding: 5px 12px; font-size: 12px;
+      color: var(--text2); cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .filter-tab:hover { background: var(--bg2); }
+    .filter-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .search-input {
+      width: 160px; padding: 7px 12px; font-size: 13px;
+      border: 0.5px solid var(--border); border-radius: var(--radius-md);
+      background: var(--bg2); color: var(--text); outline: none;
+      font-family: inherit;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .btn-export {
+      background: transparent; border: 0.5px solid var(--border2);
+      border-radius: var(--radius-md); padding: 7px 14px; font-size: 13px;
+      color: var(--text); cursor: pointer; font-family: inherit;
+      transition: background 0.15s; white-space: nowrap;
+    }
+    .btn-export:hover { background: var(--bg2); }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { border-bottom: 0.5px solid var(--border); }
+    thead th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 500; color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase; }
+    tbody tr { border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg2); }
+    tbody td { padding: 10px; vertical-align: middle; }
+    .coreo-name { font-weight: 500; text-transform: uppercase; }
+    .sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center; padding: 3px 9px;
+      border-radius: 99px; font-size: 11px; font-weight: 500;
+      cursor: pointer; border: none; font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .badge:hover { opacity: 0.8; }
+    .badge-amber { background: var(--amber-bg); color: var(--amber-text); }
+    .badge-green { background: var(--green-bg); color: var(--green-text); }
+    .link-chip {
+      display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+      border-radius: var(--radius-md); background: var(--info-bg);
+      color: var(--info-text); font-size: 11px; cursor: pointer;
+      border: none; font-family: inherit;
+    }
+
+    .hint { font-size: 11px; color: var(--text3); margin-top: 10px; }
+    .empty { text-align: center; padding: 32px; color: var(--text2); font-size: 13px; }
+
+    /* Status banner */
+    .status-bar { padding: 10px 16px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 16px; display: none; }
+    .status-bar.info  { background: var(--info-bg);  color: var(--info-text); }
+    .status-bar.error { background: var(--red-bg);   color: var(--red-text); }
+    .status-bar.ok    { background: var(--green-bg); color: var(--green-text); }
+
+    /* Modal */
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 50; align-items: center; justify-content: center; padding: 16px; }
+    .modal-bg.open { display: flex; }
+    .modal { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 20px; width: 100%; max-width: 580px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .modal-header h3 { font-size: 15px; font-weight: 500; }
+    .btn-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text2); line-height: 1; }
+    .modal iframe { width: 100%; height: 300px; border: none; border-radius: var(--radius-md); }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--green-bg); color: var(--green-text); border: 0.5px solid var(--border); padding: 10px 16px; border-radius: var(--radius-md); font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 99; max-width: 280px; }
+    .toast.show { opacity: 1; }
+    .toast.error { background: var(--red-bg); color: var(--red-text); }
+
+    /* Config notice */
+    .config-notice { background: var(--amber-bg); color: var(--amber-text); border-radius: var(--radius-md); padding: 12px 16px; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+    .config-notice strong { font-weight: 500; }
+
+    @media (max-width: 540px) {
+      .form-row { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stats .stat:last-child { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🤠</div>
+  <div class="logo-text">
+    <h1>LineDance App</h1>
+    <p>Carga de coreografías</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Aviso de configuración (se oculta automáticamente cuando APPS_SCRIPT_URL está configurado) -->
+  <div class="config-notice" id="config-notice">
+    <strong>Configuración pendiente:</strong> Reemplazá el valor de <code>APPS_SCRIPT_URL</code> en el archivo <code>index.html</code> con la URL de tu Google Apps Script para activar la sincronización con Google Sheets.
+  </div>
+
+  <div id="status-bar" class="status-bar"></div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num" id="total-count">—</div>
+      <div class="stat-label">Coreografías cargadas</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="pending-count">—</div>
+      <div class="stat-label">Pendientes de descarga</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="done-count">—</div>
+      <div class="stat-label">Descargadas</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Agregar coreografía</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre de la coreografía *</label>
+        <input type="text" id="inp-coreo" placeholder="ej. BOOT SCOOTIN BOOGIE" />
+      </div>
+      <div class="form-group">
+        <label>Nombre de la canción</label>
+        <input type="text" id="inp-cancion" placeholder="ej. Drivin' My Life Away" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Artista</label>
+        <input type="text" id="inp-artista" placeholder="ej. Eddie Rabbitt" />
+      </div>
+      <div class="form-group">
+        <label>Nivel</label>
+        <select id="inp-nivel">
+          <option value="">Seleccionar nivel</option>
+          <option>Principiante</option>
+          <option>Intermedio</option>
+          <option>Avanzado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group full" style="margin-bottom:12px">
+      <label>Link de YouTube *</label>
+      <div class="url-row">
+        <input type="text" id="inp-url" placeholder="https://www.youtube.com/watch?v=..." oninput="resetPreview()" />
+        <button class="btn-preview" onclick="verPreview()">▶ Previsualizar</button>
+      </div>
+      <div class="preview-error" id="preview-error">Link inválido. Verificá que sea una URL de YouTube correcta.</div>
+      <div class="preview-box" id="preview-box">
+        <iframe id="preview-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-agregar" onclick="agregarCoreo()">Agregar coreografía</button>
+  </div>
+
+  <div class="card">
+    <div class="table-header">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <h2 style="margin:0">Lista</h2>
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="setFiltroEstado('todos', this)">Todos</button>
+          <button class="filter-tab" onclick="setFiltroEstado('pendiente', this)">Pendientes</button>
+          <button class="filter-tab" onclick="setFiltroEstado('descargada', this)">Descargadas</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" class="search-input" placeholder="Buscar..." oninput="setBusqueda(this.value)" />
+        <button class="btn-export" onclick="exportarTXT()">Exportar pendientes</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Coreografía</th>
+          <th>Canción / Artista</th>
+          <th>Nivel</th>
+          <th>Preview</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body">
+        <tr><td colspan="5" class="empty">Cargando datos...</td></tr>
+      </tbody>
+    </table>
+    <p class="hint">* Click en el estado para cambiarlo entre pendiente y descargada</p>
+  </div>
+
+</div>
+
+<!-- Modal YouTube -->
+<div class="modal-bg" id="modal-bg" onclick="cerrarModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-titulo">Vista previa</h3>
+      <button class="btn-close" onclick="cerrarModalDirecto()">✕</button>
+    </div>
+    <iframe id="modal-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // =============================================
+  // CONFIGURACIÓN — reemplazá esta URL con la
+  // URL de tu Google Apps Script desplegado
+  // =============================================
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAs9dyeTNx2tXw1v3pNmSyBaVx_RhCFHlH-fG_dAwajS69TMgR1oz4oPGtFC46mZF2/exec";
+  // =============================================
+
+  let datos = [];
+  let filtroEstado = "todos";
+  let busqueda = "";
+
+  // Ocultar aviso si ya está configurado
+  if (APPS_SCRIPT_URL !== "TU_URL_ACA") {
+    document.getElementById("config-notice").style.display = "none";
+  }
+
+  // ---- Carga inicial ----
+  async function cargarDatos() {
+    if (APPS_SCRIPT_URL === "TU_URL_ACA") {
+      datos = [];
+      renderizar();
+      actualizarStats();
+      return;
+    }
+    mostrarStatus("Cargando datos...", "info");
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=getAll`);
+      const json = await res.json();
+      datos = json.data || [];
+      renderizar();
+      actualizarStats();
+      ocultarStatus();
+    } catch (e) {
+      mostrarStatus("Error al cargar los datos. Verificá la conexión.", "error");
+    }
+  }
+
+  // ---- Agregar ----
+  async function agregarCoreo() {
+    const coreo   = document.getElementById("inp-coreo").value.trim().toUpperCase();
+    const cancion = document.getElementById("inp-cancion").value.trim();
+    const artista = document.getElementById("inp-artista").value.trim();
+    const nivel   = document.getElementById("inp-nivel").value;
+    const url     = document.getElementById("inp-url").value.trim();
+
+    if (!coreo || !url) { mostrarToast("Completá el nombre y el link", true); return; }
+    if (!extraerVideoId(url)) { mostrarToast("El link de YouTube no es válido", true); return; }
+
+    const btn = document.getElementById("btn-agregar");
+    btn.disabled = true;
+    btn.textContent = "Guardando...";
+
+    const nuevo = { coreo, cancion: cancion || coreo, artista: artista || "-", nivel: nivel || "-", url, estado: "pendiente" };
+
+    if (APPS_SCRIPT_URL === "TU_URL_ACA") {
+      datos.push(nuevo);
+      limpiarForm();
+      renderizar();
+      actualizarStats();
+      mostrarToast("Coreografía agregada (modo demo, sin guardar en Sheets)");
+      btn.disabled = false;
+      btn.textContent = "Agregar coreografía";
+      return;
+    }
+
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "add", ...nuevo }),
+      });
+      datos.push(nuevo);
+      limpiarForm();
+      renderizar();
+      actualizarStats();
+      mostrarToast("Coreografía guardada!");
+    } catch (e) {
+      mostrarToast("Error al guardar. Intentá de nuevo.", true);
+    }
+    btn.disabled = false;
+    btn.textContent = "Agregar coreografía";
+  }
+
+  // ---- Cambiar estado ----
+  async function toggleEstado(idx) {
+    const nuevoEstado = datos[idx].estado === "pendiente" ? "descargada" : "pendiente";
+    datos[idx].estado = nuevoEstado;
+    actualizarStats();
+    renderizar();
+
+    if (APPS_SCRIPT_URL === "TU_URL_ACA") return;
+
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "updateEstado", idx, estado: nuevoEstado }),
+      });
+    } catch (e) {
+      mostrarToast("Error al actualizar el estado", true);
+    }
+  }
+
+  // ---- Renderizar tabla ----
+  function renderizar() {
+    const tbody = document.getElementById("tabla-body");
+    let lista = datos;
+    if (filtroEstado !== "todos") lista = lista.filter(d => d.estado === filtroEstado);
+    if (busqueda) lista = lista.filter(d =>
+      d.coreo.toLowerCase().includes(busqueda) ||
+      d.cancion.toLowerCase().includes(busqueda) ||
+      d.artista.toLowerCase().includes(busqueda)
+    );
+    if (lista.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay coreografías para mostrar</td></tr>';
+      return;
+    }
+    tbody.innerHTML = lista.map(d => {
+      const idxReal = datos.indexOf(d);
+      const safeCoreo = d.coreo.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      return `
+      <tr>
+        <td class="coreo-name">${d.coreo}</td>
+        <td>
+          <div>${d.cancion}</div>
+          <div class="sub">${d.artista}</div>
+        </td>
+        <td><span style="font-size:12px;color:var(--text2)">${d.nivel}</span></td>
+        <td><button class="link-chip" onclick="abrirModal('${d.url}','${safeCoreo}')">▶ ver</button></td>
+        <td>
+          <button class="badge ${d.estado === 'descargada' ? 'badge-green' : 'badge-amber'}"
+            onclick="toggleEstado(${idxReal})" title="Click para cambiar estado">
+            ${d.estado === 'descargada' ? '✓ descargada' : '⏳ pendiente'}
+          </button>
+        </td>
+      </tr>`;
+    }).join("");
+  }
+
+  function actualizarStats() {
+    document.getElementById("total-count").textContent = datos.length;
+    document.getElementById("done-count").textContent = datos.filter(d => d.estado === "descargada").length;
+    document.getElementById("pending-count").textContent = datos.filter(d => d.estado === "pendiente").length;
+  }
+
+  function setFiltroEstado(valor, btn) {
+    filtroEstado = valor;
+    document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderizar();
+  }
+
+  function setBusqueda(q) {
+    busqueda = q.toLowerCase();
+    renderizar();
+  }
+
+  // ---- Export ----
+  function exportarTXT() {
+    const pendientes = datos.filter(d => d.estado === "pendiente");
+    if (pendientes.length === 0) { mostrarToast("No hay pendientes para exportar", true); return; }
+    const lineas = pendientes.map(d => `${d.coreo} - ${d.cancion} | ${d.url}`).join("\n");
+    const blob = new Blob([lineas], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "linedance_pendientes.txt";
+    a.click();
+    mostrarToast(`${pendientes.length} pendiente(s) exportada(s)!`);
+  }
+
+  // ---- YouTube helpers ----
+  function extraerVideoId(url) {
+    const rs = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+    ];
+    for (const r of rs) { const m = url.match(r); if (m) return m[1]; }
+    return null;
+  }
+
+  function verPreview() {
+    const url = document.getElementById("inp-url").value.trim();
+    const id = extraerVideoId(url);
+    const box = document.getElementById("preview-box");
+    const err = document.getElementById("preview-error");
+    if (!id) { box.style.display = "none"; err.style.display = "block"; return; }
+    err.style.display = "none";
+    document.getElementById("preview-iframe").src = `https://www.youtube.com/embed/${id}`;
+    box.style.display = "block";
+  }
+
+  function resetPreview() {
+    document.getElementById("preview-box").style.display = "none";
+    document.getElementById("preview-error").style.display = "none";
+    document.getElementById("preview-iframe").src = "";
+  }
+
+  function abrirModal(url, titulo) {
+    const id = extraerVideoId(url);
+    if (!id) return;
+    document.getElementById("modal-titulo").textContent = titulo;
+    document.getElementById("modal-iframe").src = `https://www.youtube.com/embed/${id}`;
+    document.getElementById("modal-bg").classList.add("open");
+  }
+
+  function cerrarModal(e) {
+    if (e.target === document.getElementById("modal-bg")) cerrarModalDirecto();
+  }
+  function cerrarModalDirecto() {
+    document.getElementById("modal-bg").classList.remove("open");
+    document.getElementById("modal-iframe").src = "";
+  }
+
+  // ---- UI helpers ----
+  function limpiarForm() {
+    ["inp-coreo","inp-cancion","inp-artista","inp-url"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("inp-nivel").value = "";
+    resetPreview();
+  }
+
+  function mostrarToast(msg, error = false) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = "toast" + (error ? " error" : "");
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+  }
+
+  function mostrarStatus(msg, tipo) {
+    const s = document.getElementById("status-bar");
+    s.textContent = msg;
+    s.className = `status-bar ${tipo}`;
+    s.style.display = "block";
+  }
+  function ocultarStatus() {
+    document.getElementById("status-bar").style.display = "none";
+  }
+
+  // Arrancar
+  cargarDatos();
+</script>
+</body>
+</html>

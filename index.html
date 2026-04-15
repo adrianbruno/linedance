@@ -173,10 +173,46 @@
     .config-notice { background: var(--amber-bg); color: var(--amber-text); border-radius: var(--radius-md); padding: 12px 16px; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
     .config-notice strong { font-weight: 500; }
 
-    @media (max-width: 540px) {
+    /* Mobile: tarjetas en lugar de tabla */
+    .coreo-card { display: none; }
+
+    @media (max-width: 600px) {
+      .container { padding: 16px 12px 48px; }
+      .card { padding: 16px; }
+
       .form-row { grid-template-columns: 1fr; }
-      .stats { grid-template-columns: 1fr 1fr; }
-      .stats .stat:last-child { grid-column: 1 / -1; }
+      input, select { padding: 12px; font-size: 16px; }
+      .btn-primary { padding: 14px; font-size: 15px; }
+      .btn-preview { padding: 12px 14px; font-size: 14px; }
+
+      .stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stat { padding: 10px 10px; }
+      .stat-num { font-size: 20px; }
+      .stat-label { font-size: 10px; }
+
+      .table-header { flex-direction: column; align-items: stretch; gap: 10px; }
+      .table-header > div { width: 100%; }
+      .filter-tabs { justify-content: stretch; }
+      .filter-tab { flex: 1; text-align: center; padding: 8px 4px; font-size: 13px; }
+      .search-input { width: 100%; padding: 10px 12px; font-size: 15px; }
+      .btn-export { width: 100%; justify-content: center; padding: 10px; font-size: 14px; }
+
+      table, thead, tbody, th, td, tr { display: none !important; }
+
+      .coreo-card {
+        display: flex; flex-direction: column; gap: 8px;
+        border-bottom: 0.5px solid var(--border); padding: 14px 0;
+      }
+      .coreo-card:last-child { border-bottom: none; }
+      .coreo-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+      .coreo-card-nombre { font-weight: 500; font-size: 15px; text-transform: uppercase; flex: 1; line-height: 1.3; }
+      .coreo-card-meta { font-size: 13px; color: var(--text2); }
+      .coreo-card-nivel { font-size: 12px; color: var(--text3); }
+      .coreo-card-actions { display: flex; gap: 8px; align-items: center; }
+      .coreo-card-actions .link-chip { padding: 7px 14px; font-size: 13px; }
+      .coreo-card-actions .badge { padding: 7px 14px; font-size: 13px; }
+
+      .hint { font-size: 12px; margin-top: 14px; }
     }
   </style>
 </head>
@@ -284,6 +320,7 @@
         <tr><td colspan="5" class="empty">Cargando datos...</td></tr>
       </tbody>
     </table>
+    <div id="cards-container"></div>
     <p class="hint">* Click en el estado para cambiarlo entre pendiente y descargada</p>
   </div>
 

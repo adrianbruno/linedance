@@ -307,7 +307,7 @@
   // CONFIGURACIÓN — reemplazá esta URL con la
   // URL de tu Google Apps Script desplegado
   // =============================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAs9dyeTNx2tXw1v3pNmSyBaVx_RhCFHlH-fG_dAwajS69TMgR1oz4oPGtFC46mZF2/exec";
+  const APPS_SCRIPT_URL = "TU_URL_ACA";
   // =============================================
 
   let datos = [];
@@ -481,7 +481,7 @@
     return null;
   }
 
-  function verPreview() {
+  async function verPreview() {
     const url = document.getElementById("inp-url").value.trim();
     const id = extraerVideoId(url);
     const box = document.getElementById("preview-box");
@@ -490,6 +490,45 @@
     err.style.display = "none";
     document.getElementById("preview-iframe").src = `https://www.youtube.com/embed/${id}`;
     box.style.display = "block";
+
+    // Intentar autocompletar canción y artista solo si los campos están vacíos
+    const inpCancion = document.getElementById("inp-cancion");
+    const inpArtista = document.getElementById("inp-artista");
+    if (inpCancion.value.trim() || inpArtista.value.trim()) return; // no pisar si ya tienen algo
+
+    try {
+      const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const titulo = data.title || "";
+
+      // Intentar separar "Artista - Canción" o "Artista · Canción"
+      const separadores = [" - ", " – ", " — ", " · "];
+      let cancion = titulo;
+      let artista = "";
+
+      for (const sep of separadores) {
+        if (titulo.includes(sep)) {
+          const partes = titulo.split(sep);
+          artista = partes[0].trim();
+          cancion = partes.slice(1).join(sep).trim();
+          // Limpiar sufijos comunes del título de la canción
+          cancion = cancion.replace(/\s*\(Official.*?\)/gi, "")
+                           .replace(/\s*\[Official.*?\]/gi, "")
+                           .replace(/\s*\(Audio.*?\)/gi, "")
+                           .replace(/\s*\(Video.*?\)/gi, "")
+                           .replace(/\s*\(Lyric.*?\)/gi, "")
+                           .trim();
+          break;
+        }
+      }
+
+      if (cancion) inpCancion.value = cancion;
+      if (artista) inpArtista.value = artista;
+      if (cancion || artista) mostrarToast("Título detectado desde YouTube!");
+    } catch (e) {
+      // Si falla el fetch, no pasa nada — los campos quedan vacíos para completar manual
+    }
   }
 
   function resetPreview() {

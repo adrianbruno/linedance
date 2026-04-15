@@ -344,7 +344,7 @@
   // CONFIGURACIÓN — reemplazá esta URL con la
   // URL de tu Google Apps Script desplegado
   // =============================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAs9dyeTNx2tXw1v3pNmSyBaVx_RhCFHlH-fG_dAwajS69TMgR1oz4oPGtFC46mZF2/exec";
+  const APPS_SCRIPT_URL = "TU_URL_ACA";
   // =============================================
 
   let datos = [];
@@ -366,7 +366,11 @@
     }
     mostrarStatus("Cargando datos...", "info");
     try {
-      const res = await fetch(`${APPS_SCRIPT_URL}?action=getAll`);
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=getAll`, {
+        method: "GET",
+        redirect: "follow",
+        cache: "no-cache",
+      });
       const json = await res.json();
       datos = json.data || [];
       renderizar();

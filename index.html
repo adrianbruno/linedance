@@ -175,8 +175,9 @@
 
     /* Mobile: tarjetas en lugar de tabla */
     .coreo-card { display: none; }
+    #cards-container { display: none; }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
       .container { padding: 16px 12px 48px; }
       .card { padding: 16px; }
 
@@ -198,6 +199,7 @@
       .btn-export { width: 100%; justify-content: center; padding: 10px; font-size: 14px; }
 
       table, thead, tbody, th, td, tr { display: none !important; }
+      #cards-container { display: block; }
 
       .coreo-card {
         display: flex; flex-direction: column; gap: 8px;
@@ -344,7 +346,7 @@
   // CONFIGURACIÓN — reemplazá esta URL con la
   // URL de tu Google Apps Script desplegado
   // =============================================
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFPz3qybyoY-cUnp8EvrRukWv2kpaWIfTryRi83kJ5sdesByrgt6uwNiT2k3eWBckE/exec";
+  const APPS_SCRIPT_URL = "TU_URL_ACA";
   // =============================================
 
   let datos = [];

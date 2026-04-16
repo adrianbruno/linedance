@@ -245,12 +245,9 @@
       <label>Link de YouTube *</label>
       <div class="url-row">
         <input type="text" id="inp-url" placeholder="https://www.youtube.com/watch?v=..." oninput="resetPreview()" />
-        <button class="btn-preview" onclick="verPreview()">▶ Previsualizar</button>
+        <button class="btn-preview" onclick="verPreview()">▶ Cargar</button>
       </div>
       <div class="preview-error" id="preview-error">Link inválido. Verificá que sea una URL de YouTube correcta.</div>
-      <div class="preview-box" id="preview-box">
-        <iframe id="preview-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -276,6 +273,9 @@
           <option>Avanzado</option>
         </select>
       </div>
+    </div>
+    <div class="preview-box" id="preview-box" style="margin-bottom:12px">
+      <iframe id="preview-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
     </div>
     <button class="btn-primary" id="btn-agregar" onclick="agregarCoreo()">Agregar coreografía</button>
     <button id="btn-cancelar" onclick="cancelarEdicion()" style="display:none;width:100%;margin-top:8px;padding:10px;font-size:14px;background:transparent;border:0.5px solid var(--border2);border-radius:var(--radius-md);color:var(--text2);cursor:pointer;font-family:inherit;">Cancelar edición</button>
@@ -566,9 +566,12 @@
   }
 
   function actualizarStats() {
-    document.getElementById("total-count").textContent = datos.length;
-    document.getElementById("done-count").textContent = datos.filter(d => d.estado === "descargada").length;
-    document.getElementById("pending-count").textContent = datos.filter(d => d.estado === "pendiente").length;
+    const t = document.getElementById("total-count");
+    const d = document.getElementById("done-count");
+    const p = document.getElementById("pending-count");
+    if (t) t.textContent = datos.length;
+    if (d) d.textContent = datos.filter(x => x.estado === "descargada").length;
+    if (p) p.textContent = datos.filter(x => x.estado === "pendiente").length;
   }
 
   function setFiltroEstado(valor, btn) {

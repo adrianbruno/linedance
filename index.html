@@ -237,23 +237,21 @@
 
   <div id="status-bar" class="status-bar"></div>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-num" id="total-count">—</div>
-      <div class="stat-label">Coreografías cargadas</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num" id="pending-count">—</div>
-      <div class="stat-label">Pendientes de descarga</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num" id="done-count">—</div>
-      <div class="stat-label">Descargadas</div>
-    </div>
-  </div>
+
 
   <div class="card">
     <h2>Agregar coreografía</h2>
+    <div class="form-group full" style="margin-bottom:12px">
+      <label>Link de YouTube *</label>
+      <div class="url-row">
+        <input type="text" id="inp-url" placeholder="https://www.youtube.com/watch?v=..." oninput="resetPreview()" />
+        <button class="btn-preview" onclick="verPreview()">▶ Previsualizar</button>
+      </div>
+      <div class="preview-error" id="preview-error">Link inválido. Verificá que sea una URL de YouTube correcta.</div>
+      <div class="preview-box" id="preview-box">
+        <iframe id="preview-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      </div>
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label>Nombre de la coreografía *</label>
@@ -277,17 +275,6 @@
           <option>Intermedio</option>
           <option>Avanzado</option>
         </select>
-      </div>
-    </div>
-    <div class="form-group full" style="margin-bottom:12px">
-      <label>Link de YouTube *</label>
-      <div class="url-row">
-        <input type="text" id="inp-url" placeholder="https://www.youtube.com/watch?v=..." oninput="resetPreview()" />
-        <button class="btn-preview" onclick="verPreview()">▶ Previsualizar</button>
-      </div>
-      <div class="preview-error" id="preview-error">Link inválido. Verificá que sea una URL de YouTube correcta.</div>
-      <div class="preview-box" id="preview-box">
-        <iframe id="preview-iframe" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
       </div>
     </div>
     <button class="btn-primary" id="btn-agregar" onclick="agregarCoreo()">Agregar coreografía</button>

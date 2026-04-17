@@ -304,6 +304,7 @@
           <th>Nivel</th>
           <th>Preview</th>
           <th>Estado</th>
+          <th></th>
         </tr>
       </thead>
       <tbody id="tabla-body">
@@ -475,6 +476,23 @@
     btn.textContent = "Agregar coreografía";
   }
 
+  // ---- Eliminar ----
+  async function eliminarCoreo(idx) {
+    if (!confirm("¿Eliminar esta coreografía?")) return;
+    datos.splice(idx, 1);
+    renderizar();
+    actualizarStats();
+    mostrarToast("Coreografía eliminada");
+    if (APPS_SCRIPT_URL !== "TU_URL_ACA") {
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "delete", idx }),
+        });
+      } catch (e) { mostrarToast("Error al eliminar en Sheets", true); }
+    }
+  }
+
   // ---- Cambiar estado ----
   async function toggleEstado(idx) {
     const nuevoEstado = datos[idx].estado === "pendiente" ? "descargada" : "pendiente";
@@ -507,7 +525,7 @@
     );
 
     if (lista.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay coreografías para mostrar</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay coreografías para mostrar</td></tr>';
       cards.innerHTML = '<p class="empty">No hay coreografías para mostrar</p>';
       return;
     }
@@ -532,6 +550,7 @@
             ${d.estado === 'descargada' ? '&#10003; descargada' : '&#8987; pendiente'}
           </button>
         </td>
+        <td><button onclick="eliminarCoreo(${idxReal})" style="background:none;border:none;cursor:pointer;font-size:15px;color:var(--text3);padding:4px 6px;" title="Eliminar">&#10005;</button></td>
       </tr>`;
     }).join("");
 
@@ -554,12 +573,13 @@
           ${d.cancion !== d.coreo ? d.cancion + ' &nbsp;&middot;&nbsp; ' : ''}${d.artista !== '-' ? d.artista : ''}
           ${d.nivel !== '-' ? '<span class="coreo-card-nivel">' + d.nivel + '</span>' : ''}
         </div>
-        <div class="coreo-card-actions">
+        <div class="coreo-card-actions" style="justify-content:space-between;">
           <button class="link-chip" onclick="abrirModal('${safeUrl}','${safeCoreo}')">&#9654; ver video</button>
           <button class="badge ${esBadgeVerde ? 'badge-green' : 'badge-amber'}"
             onclick="toggleEstado(${idxReal})" style="flex:1;justify-content:center;">
             ${esBadgeVerde ? '&#10003; descargada' : '&#8987; pendiente'}
           </button>
+          <button onclick="eliminarCoreo(${idxReal})" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius-md);cursor:pointer;font-size:14px;color:var(--text2);padding:7px 12px;" title="Eliminar">&#10005;</button>
         </div>
       </div>`;
     }).join("");
